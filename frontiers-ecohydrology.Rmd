@@ -1,0 +1,433 @@
+---
+title: "Frontiers in hydrology: ecohydrology"
+author: "Alexander Buzacott & Merit van den Berg"
+date: "`r Sys.Date()`"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+**Alexander Buzacott & Merit van den Berg**
+
+[FLUXNET](https://fluxnet.org/about/) is a large network of eddy covariance towers across the world. The towers measure the exchange of energy, carbon and water between the atmosphere and the biosphere, and are important tools to understand greenhouse gas fluxes and ecosystem functioning. 
+
+The latest data set, [FLUXNET2015](https://fluxnet.org/data/fluxnet2015-dataset/), has been adapted for this assigment, where you will explore carbon, water and energy exchanges in ecosystems.
+
+### Data
+
+The monthly FLUXNET2015 Tier 1 data has been integrated with the BADM (Biological, Ancillary, Disturbance, and Metadata) data to simplify the analysis process. In addition, the MODIS satellite products [MOD13Q1 NDVI](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD13Q1) and [MCD15A3H LAI](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MCD15A3H) have been added.
+
+
+| Variable        | Description                                                                                                                                                                                       | Units         |   |   |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|---|---|
+| TIMESTAMP       | Timestamp of the averaging period                                                                                                                                                                 |               |   |   |
+| SITE_ID         | Unique site ID                                                                                                                                                                                    |               |   |   |
+| Country         |                                                                                                                                                                                                   |               |   |   |
+| Site            |                                                                                                                                                                                                   |               |   |   |
+| IGBP            | International Geosphere-Biosphere Programme land use code                                                                                                                                         |               |   |   |
+| LOCATION_LAT    |                                                                                                                                                                                                   | deg           |   |   |
+| LOCATION_LONG   |                                                                                                                                                                                                   | deg           |   |   |
+| HEIGHTC         | Canopy height                                                                                                                                                                                     | m             |   |   |
+| TA_F            | Air temperature, consolidated from TA_F_MDS and TA_ERA                                                                                                                                            | deg C         |   |   |
+| SW_IN_POT       | Shortwave radiation, incoming, potential (top of atmosphere)                                                                                                                                      | W m-2         |   |   |
+| SW_IN_F         | Shortwave radiation, incoming consolidated from SW_IN_F_MDS and SW_IN_ERA (negative values set to zero)                                                                                           | W m-2         |   |   |
+| LW_IN_F         | Longwave radiation, incoming, consolidated from LW_IN_F_MDS and LW_IN_ERA                                                                                                                         | W m-2         |   |   |
+| VPD_F           | Vapor Pressure Deficit consolidated from VPD_F_MDS and VPD_ERA                                                                                                                                    | hPa           |   |   |
+| PA_F            | Atmospheric pressure consolidated from PA and PA_ERA                                                                                                                                              | hPa           |   |   |
+| P_F             | Precipitation consolidated from P and P_ERA                                                                                                                                                       | mm            |   |   |
+| WS_F            | Wind speed, consolidated from WS and WS_ERA                                                                                                                                                       | m s-1         |   |   |
+| USTAR           | Friction velocity                                                                                                                                                                                 | m s-1         |   |   |
+| NETRAD          | Net radiation                                                                                                                                                                                     | W m-2         |   |   |
+| PPFD_IN         | Photosynthetic photon flux density, incoming                                                                                                                                                      | µmol m-2 s-1  |   |   |
+| PPFD_OUT        | Photosynthetic photon flux density, outgoing                                                                                                                                                      | µmol m-2 s-1  |   |   |
+| SW_OUT          | Shortwave radiation, outgoing                                                                                                                                                                     | W m-2         |   |   |
+| CO2_F_MDS       | CO2 flux, gapfilled by the MDS method                                                                                                                                                             | µmol m-2 s-1  |   |   |
+| TS_F_MDS_1      | Soil temperature, gapfilled with MDS                                                                                                                                                              | deg C         |   |   |
+| SWC_F_MDS_1     | Soil water content, gapfilled with MDS                                                                                                                                                            | %             |   |   |
+| G_F_MDS         | Soil heat flux                                                                                                                                                                                    | W m-2         |   |   |
+| LE_F_MDS        | Latent heat flux, gapfilled using MDS method                                                                                                                                                      | W m-2         |   |   |
+| LE_CORR         | Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor                                                                                                                  | W m-2         |   |   |
+| LE_RANDUNC      | Latent heat random uncertainty                                                                                                                                                                    | W m-2         |   |   |
+| H_F_MDS         | Sensible heat flux, gapfilled using MDS method                                                                                                                                                    | W m-2         |   |   |
+| H_CORR          | Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor                                                                                                                 | W m-2         |   |   |
+| H_RANDUNC       | Random uncertainty of H, from measured only data                                                                                                                                                  | W m-2         |   |   |
+| NEE_VUT_REF     | Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation | gC m-2 d-1    |   |   |
+| RECO_NT_VUT_REF | Ecosystem Respiration, from Nighttime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation             | gC m-2 d-1    |   |   |
+| GPP_NT_VUT_REF  | Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation           | gC m-2 d-1    |   |   |
+| PPFD_DIF        | Photosynthetic photon flux density, diffuse incoming                                                                                                                                              | µmol m-2 s-1  |   |   |
+| SW_DIF          | Shortwave radiation, diffuse incoming                                                                                                                                                             | W m-2         |   |   |
+| LW_OUT          | Longwave radiation, diffuse incoming                                                                                                                                                              | W m-2         |   |   |
+| ET_F_MDS        | Evapotranspiration, gapfilled by MDS                                                                                                                                                              | mm d-1        |   |   |
+| NDVI            | Normalised difference vegetation index                                                                                                                                                            | -             |   |   |
+| LAI             | Leaf area index                                                                                                                                                                                   | -             |   |   |
+
+The [IGBP land use codes](https://fluxnet.org/data/badm-data-templates/igbp-classification/) will be helpful for making comparisons across ecosystems.
+
+| Land use | Description                                                                                                                                                                                                                                                     |
+|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| BSV      | Barren Sparse Vegetation: Lands exposed soil, sand, or rocks and has less than 10% vegetative cover during any time of the year.                                                                                                                                |
+| CRO      | Croplands: Lands covered with temporary crops followed by harvest and a bare soil period (e.g., single and multiple cropping systems). Note that perennial woody crops will be classified as the appropriate forest or shrub land cover type.                   |
+| CSH      | Closed Shrublands: Lands with woody vegetation less than 2 meters tall and with shrub canopy cover >60%. The shrub foliage can be either evergreen or deciduous.                                                                                                |
+| CVM      | Cropland/Natural Vegetation Mosaics: Lands with a mosaic of croplands, forest, shrublands, and grasslands in which no one component comprises more than 60% of the landscape.                                                                                   |
+| DBF      | Deciduous Broadleaf Forests: Lands dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Consists of broadleaf tree communities with an annual cycle of leaf-on and leaf-off periods.                                          |
+| DNF      | Deciduous Needleleaf Forests: Lands dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Consists of seasonal needleleaf tree communities with an annual cycle of leaf-on and leaf-off periods.                               |
+| EBF      | Evergreen Broadleaf Forests: Lands dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees and shrubs remain green year round. Canopy is never without green foliage.                                           |
+| ENF      | Evergreen Needleleaf Forests: Lands dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year. Canopy is never without green foliage.                                                       |
+| GRA      | Grasslands: Lands with herbaceous types of cover. Tree and shrub cover is less than 10%. Permanent wetlands lands with a permanent mixture of water and herbaceous or woody vegetation. The vegetation can be present in either salt, brackish, or fresh water. |
+| MF       | Mixed Forests: Lands dominated by trees with a percent cover >60% and height exceeding 2 meters. Consists of tree communities with interspersed mixtures or mosaics of the other four forest types. None of the forest types exceeds 60% of landscape.          |
+| OSH      | Open Shrublands: Lands with woody vegetation less than 2 meters tall and with shrub canopy cover between 10-60%. The shrub foliage can be either evergreen or deciduous.                                                                                        |
+| SAV      | Savannas: Lands with herbaceous and other understory systems, and with forest canopy cover between 10-30%. The forest cover height exceeds 2 meters.                                                                                                            |
+| SNO      | Snow and Ice: Lands under snow/ice cover most of the year.                                                                                                                                                                                                      |
+| URB      | Urban and Built-Up Lands: Land covered by buildings and other man-made structures.                                                                                                                                                                              |
+| WAT      | Water Bodies.                                                                                                                                                                                                                                                   |
+| WET      | Permanent Wetlands: Lands with a permanent mixture of water and herbaceous or woody vegetation that cover extensive areas. The vegetation can be present in either salt, brackish, or fresh water.                                                              |
+| WSA      | Woody Savannas: Lands with herbaceous and other understory systems, and with forest canopy cover between 30-60%. The forest cover height exceeds 2 meters.                                                                                                      |
+
+## Assignment
+
+Your task is to assess the relationships between carbon, water and energy between different land use types and ecosystem attributes using the FLUXNET2015 dataset.
+
+Write a short report (max 1000 words, 2-3 pages) that includes:
+
+1. Cover page with your names
+2. Think of a research question relating to water use efficiency (WUE) that you would like to cover. For example, you could consider making comparisons between land use types, or climate, or changes over time.
+3. Write a hypothesis/hypotheses relating to your research question (e.g. is WUE trending up over time). Describe the reasons for making your hypotheses
+4. Generate graphs to investigate/test your hypotheses
+5. Select graphs that support/refute your hypotheses and describe why. Bonus points for making formal statistical comparisons
+6. Discuss your results with literature to support your findings
+
+Below you will find code that loads the data and generates figures that you can use in your submission. Examples of extra figures that you could generate are also provided.
+
+A R Markdown version of this notebook is also available from Canvas.
+
+# FLUXNET2015 dataset
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(shiny)
+library(ggpmisc)
+
+theme_set(theme_bw())
+
+nee_lab <- expression(NEE~'['*g~C.m^{-2}*.d^{-1}*']')
+gpp_lab <- expression(GPP~'['*g~C.m^{-2}*.d^{-1}*']')
+reco_lab <- expression(Reco~'['*g~C.m^{-2}*.d^{-1}*']')
+et_lab <- expression(ET~'['*mm.d^{-1}*']')
+ppfd_lab <- expression(PPFD~'['*g~C.m^{-2}*.d^{-1}*']')
+```
+
+```{r}
+# Read in data and convert the timestamp column to datetime
+# df = read_csv('https://raw.githubusercontent.com/buzacott/frontiers_ecohydrology/main/data/fluxnet2015_data_for_students.csv')
+df <- read_csv('~/Data/GitHub/frontiers_ecohydrology/data/fluxnet2015_data_for_students.csv')
+
+# Add some extra useful variables
+df <- df %>% 
+  mutate(Year = year(TIMESTAMP),
+         Month = month(TIMESTAMP),
+         Season = factor(if_else(LOCATION_LAT > 0,
+                                 quarter(TIMESTAMP, fiscal_start = 12),
+                                 quarter(TIMESTAMP, fiscal_start = 6)),
+                         levels = 1:4,
+                         labels = c('Winter', 'Spring', 'Summer', 'Autumn')),
+         YearDecimal = Year + (Month-1)/12)
+
+glimpse(df)
+```
+
+Evapotranspiration (ET) is not provided in the FLUXNET2015 dataset, but it can
+be calculated from the latent heat flux. To get from LE to ET, we need the 
+latent heat of vapourisation ($\lambda$) and the density of water ($\rho$).
+
+$ET = \frac{LE}{\lambda \rho}$
+
+For reference, ET is not provided in the FLUXNET2015 dataset and has been 
+calculated as follows:
+
+
+where $\lambda$ is the heat of vapourisation of water. At 100ºC and atmospheric
+pressure of 1 atm, the heat of vapourisation of water is approximately 
+2256 kJ/kg. Since temperatures of 100ºC are not experienced in the field, the
+amount of energy required to evaporate water is higher and is temperature 
+dependent. 
+
+```{r}
+temp <- -30:50
+# This approximation is only valid between -30 to 50C
+lambda <- (3147.5 - 2.37 * (temp + 273.15)) # kJ kg-1 k-1
+
+ggplot() +
+  geom_line(aes(temp, lambda)) +
+  labs(y = expression(lambda~'['*kJ.kg^{-1}*.k^{-1}*']'),
+       x = 'Temperature [deg C]')
+```
+
+The LE flux is in W.m^-2^, where 1 W is 1 J.s^-1^.
+
+```{r}
+# Add ET in mm from LE (W/m2 -> J/m2/s)
+# ET (mm/d) = J/m2/s / (lambda (J/kg) . 1000 (kg/m3)) * (1000 m > mm) * (86400 s > d)
+lambd <- (3147.5 - 2.37 * (df$TA_F + 273.15)) * 1000
+
+df$ET_F_MDS <- df$LE_F_MDS / (lambd * 1000) * 1000 * 86400 
+```
+
+## Exploratory data analysis
+
+A boxplot of GPP and ET by land use ([IGBP classification](https://fluxnet.org/data/badm-data-templates/igbp-classification/)).
+
+```{r}
+ggplot(df, aes(IGBP, GPP_NT_VUT_REF)) +
+  geom_boxplot() +
+  ylab(gpp_lab)
+
+ggplot(df, aes(IGBP, ET_F_MDS)) +
+  geom_boxplot() +
+  ylab(et_lab)
+```
+
+### Seasonal variability
+
+```{r}
+ggplot(df, aes(Season, GPP_NT_VUT_REF)) +
+  geom_boxplot() +
+  ylab(gpp_lab) +
+  facet_wrap(~IGBP)
+
+ggplot(df, aes(Season, ET_F_MDS)) +
+  geom_boxplot() +
+  ylab(gpp_lab) +
+  facet_wrap(~IGBP)
+```
+
+```{r}
+df_season <- df %>% 
+  group_by(Year, Season, IGBP) %>% 
+  summarise(YearDecimal = min(YearDecimal),
+            TIMESTAMP = min(TIMESTAMP),
+            GPP_NT_VUT_REF = mean(GPP_NT_VUT_REF, na.rm=TRUE),
+            ET_F_MDS = mean(ET_F_MDS, na.rm=TRUE))
+```
+
+```{r}
+ggplot(df_season, aes(YearDecimal, GPP_NT_VUT_REF)) +
+  geom_line() +
+  facet_wrap(~IGBP)
+```
+
+```{r}
+ggplot(df_season, aes(YearDecimal, ET_F_MDS)) +
+  geom_line() +
+  facet_wrap(~IGBP)
+```
+
+## Relationships with environmental attributes
+
+```{r, fig.width=14, fig.height=4}
+plot_styling <- theme(legend.key.height = unit(1, "cm"),
+                      legend.title = element_text(size = 12, angle = 90),
+                      legend.title.align = 0.5,
+                      legend.direction = "vertical")
+
+p1 <- ggplot(df, aes(ET_F_MDS, GPP_NT_VUT_REF, col=PPFD_IN)) +
+  geom_point() +
+  scale_color_distiller(palette = 'Reds', na.value = 'transparent', direction = 1) +
+  labs(x = et_lab, y = gpp_lab, col = ppfd_lab) +
+  guides(colour = guide_colourbar(title.position = "right")) +
+  plot_styling
+
+p2 <- ggplot(df, aes(ET_F_MDS, GPP_NT_VUT_REF, col=NDVI)) +
+  geom_point() +
+  scale_color_distiller(palette = 'Greens', na.value = 'transparent', direction = 1) +
+  labs(x = et_lab, y = gpp_lab) +
+  guides(colour = guide_colourbar(title.position = "right")) +
+  plot_styling
+
+p3 <- ggplot(df, aes(ET_F_MDS, GPP_NT_VUT_REF, col=LAI)) +
+  geom_point() +
+  scale_colour_gradientn(colours = terrain.colors(6), na.value='transparent') +
+  labs(x = et_lab, y = gpp_lab) +
+  guides(colour = guide_colourbar(title.position = "right")) +
+  plot_styling
+
+egg::ggarrange(plots = list(p1, p2, p3), nrow=1)
+```
+
+### ET vs GPP per land use, coloured by NDVI
+
+```{r}
+ggplot(df, aes(ET_F_MDS, GPP_NT_VUT_REF, col=NDVI)) +
+  geom_point() +
+  labs(x=et_lab, y=gpp_lab) +
+  scale_color_distiller(palette = 'Greens', na.value = 'transparent', direction = 1) +
+  facet_wrap(~IGBP)
+```
+
+### ET vs GPP per land use, coloured by LAI
+
+```{r}
+ggplot(df, aes(ET_F_MDS, GPP_NT_VUT_REF, col=LAI)) +
+  geom_point() +
+  labs(x=et_lab, y=gpp_lab) +
+  scale_colour_gradientn(colours = terrain.colors(6), na.value='transparent') +
+  facet_wrap(~IGBP)
+```
+
+## Calculate the water use efficiency
+
+$$WUE~(g~C.kg^{-1}~H_2O) = \frac{GPP~(g~C.m^{-2}.d^{-1})}{ET~(mm~H_2O.d^{-1})}$$
+
+Check the unit conversions yourself to make sure you understand ($\rho$ of water is 1000$\frac{kg}{m^3}$):
+
+$$WUE~(g~C.kg^{-1}~H_2O) = \frac{GPP~(g~C.m^{-2}.d^{-1})}{10^{-3} ET~(m~H_2O.d^{-1}) * 10^3 \frac{kg}{m^3}}$$
+
+```{r}
+calc_wue <- function(gpp, et, q=0.975) {
+  # gpp: gross primary production
+  # et: evapotranspiration
+  # q: quantile to cut off extreme values
+  
+  # Remove values less than 0
+  gpp[gpp < 0] <- NaN
+  et[et <= 0] <- NaN
+
+  # Calculate WUE
+  wue <- gpp / et
+
+  # Remove extreme values
+  wue[wue > quantile(wue, q, na.rm=TRUE)] <- NaN
+
+  return(wue)
+}
+wue_lab <- expression(WUE~'['*g~C.kg^{-1}*~H[2]*O*']')
+
+df$WUE <- calc_wue(df$GPP_NT_VUT_REF, df$ET_F_MDS)
+```
+
+### WUE summary
+
+```{r}
+ggplot(df, aes(IGBP, WUE)) +
+  geom_boxplot() +
+  labs(y=wue_lab)
+```
+
+### Seasonal WUE
+
+```{r}
+ggplot(df, aes(Season, WUE)) +
+  geom_boxplot() +
+  labs(y=wue_lab) +
+  facet_wrap(~IGBP) +
+  coord_cartesian(ylim=c(0, 10))
+```
+
+```{r}
+# That was unexciting, how abot month
+ggplot(df, aes(Month, WUE, group=Month)) +
+  geom_boxplot() +
+  labs(y=wue_lab) +
+  facet_wrap(~IGBP) +
+  coord_cartesian(ylim=c(0, 10))
+```
+
+### Time series of WUE
+
+```{r}
+wue_season <- df %>% 
+  group_by(IGBP, Year, Season) %>% 
+  summarise(TIMESTAMP = min(TIMESTAMP),
+            YearDecimal = min(YearDecimal),
+            WUE = mean(WUE, na.rm=TRUE))
+
+ggplot(wue_season, aes(YearDecimal, WUE)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  labs(x='Timestamp', y=wue_lab) +
+  facet_wrap(~IGBP)
+```
+
+## Relationships between WUE and environmental variables
+
+WUE vs NDVI
+
+```{r}
+ggplot(df, aes(NDVI, WUE)) +
+  geom_point() +
+  facet_wrap(~IGBP)
+```
+
+WUE vs LAI
+
+```{r}
+ggplot(df, aes(LAI, WUE)) +
+  geom_point() +
+  facet_wrap(~IGBP)
+```
+
+## Interactive plots
+
+### Numerical data
+
+```{r, fig.width=6, fig.height=4, echo=FALSE}
+numeric_cols <- df %>% 
+  select(where(is.numeric)) %>%
+  colnames()
+
+selectInput(
+  'x',
+  label = 'Choose x variable:',
+  choices = numeric_cols
+)
+selectInput(
+  'y',
+  label = 'Choose y variable:',
+  choices = numeric_cols
+)
+selectInput(
+  'col',
+  label = 'Choose col variable:',
+  choices = numeric_cols
+)
+
+renderPlot({
+  ggplot(df, aes_string(x=input$x, y=input$y, col=input$col)) +
+    geom_point() +
+    geom_smooth(method='lm') +
+    scale_colour_viridis_c() +
+    stat_poly_eq(aes(label =  paste(after_stat(eq.label), 
+                                    after_stat(rr.label),
+                                    after_stat(p.value.label),
+                                    sep = "*\", \"*")))
+}, width=800, height=600, res=150)
+```
+
+### Categorical data
+
+```{r, fig.width=6, fig.height=4, echo=FALSE}
+categorical_cols <- df %>% 
+  select(where(is.character)) %>%
+  colnames()
+
+selectInput(
+  'x2',
+  label = 'Choose x variable:',
+  choices = categorical_cols
+)
+selectInput(
+  'y2',
+  label = 'Choose y variable:',
+  choices = numeric_cols
+)
+
+renderPlot({
+  ggplot(df) +
+    geom_boxplot(aes_string(x=input$x2, y=input$y2))
+}, width=800, height=600, res=150)
+```
